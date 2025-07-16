@@ -49,3 +49,37 @@ input[type="file"] {
 div {
   padding: 5px 10px;
 }
+
+.metrics-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 32px;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #23272f;
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.metrics-table th, .metrics-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #333;
+  text-align: center;
+}
+.metrics-table th {
+  background: #1a1d23;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.metrics-table tr:last-child td {
+  border-bottom: none;
+}
+.metrics-table tr:hover {
+  background: #2c313a;
+}
+.metrics-graph-container {
+  background: #23272f;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
