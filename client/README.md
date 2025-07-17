@@ -1,70 +1,80 @@
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Chainguard: Decentralized Storage System
 
-## Available Scripts
+Chainguard is a decentralized file storage web application built with React and Ethereum smart contracts. It allows users to securely upload, store, and share files using blockchain technology and IPFS (via Pinata).
 
-In the project directory, you can run:
+## Features
 
-### `npm start`
+- **Decentralized File Upload:** Upload images/files to IPFS and store references on the Ethereum blockchain.
+- **Wallet Integration:** Connect your MetaMask wallet to interact with the app.
+- **Access Control:** Share file access with other Ethereum addresses using smart contract permissions.
+- **File Display:** View and download files you have access to, with fast and secure retrieval.
+- **Security Metrics:** Basic security checks for authentication, HTTPS usage, and endpoint trust.
+- **Performance Metrics:** Upload and download times are measured and displayed in the console.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Tech Stack
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- **Frontend:** React, Chart.js, Axios
+- **Blockchain:** Ethereum (ethers.js), Solidity Smart Contract
+- **Storage:** IPFS via Pinata
 
-### `npm test`
+## Getting Started
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Prerequisites
 
-### `npm run build`
+- Node.js and npm
+- MetaMask browser extension
+- Ethereum testnet (e.g., Goerli) account with test ETH
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Installation
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/EngineerMuhammadKhalid/chainguard.git
+   cd chainguard/client
+   ```
+2. Install dependencies:
+   ```sh
+   npm install
+   ```
+3. Start the development server:
+   ```sh
+   npm start
+   ```
+   The app will run at [http://localhost:3000](http://localhost:3000).
 
 ### Deployment
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+To build and deploy the app to GitHub Pages:
+```sh
+npm run build
+npm run deploy
+```
 
-### `npm run build` fails to minify
+## Usage
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+1. Open the app and connect your MetaMask wallet.
+2. Upload an image/file. The file is pinned to IPFS and the reference is stored on-chain.
+3. Use the "Share" button to grant access to other Ethereum addresses.
+4. View files you have access to in the display section.
+
+## Smart Contract
+
+The core logic is in the `Upload.sol` smart contract, which manages file references and access control. The contract ABI and deployment details are in `src/artifacts/contracts/Upload.sol/Upload.json`.
+
+## Project Structure
+
+- `src/components/` — React components (FileUpload, Display, Modal)
+- `src/artifacts/` — Compiled smart contract artifacts
+- `public/` — Static assets and HTML
+- `build/` — Production build output
+
+## Security Notes
+
+- Do **not** expose sensitive API keys in client-side code.
+- Only interact with trusted endpoints (e.g., Pinata, Infura).
+- Always use HTTPS for API calls.
+
+## License
+
+This project is for educational and research purposes.
