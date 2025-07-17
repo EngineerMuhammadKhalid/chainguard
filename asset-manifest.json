@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/chainguard/static/css/main.41e59344.css",
+    "main.js": "/chainguard/static/js/main.108e0463.js",
+    "static/js/787.8f19a83d.chunk.js": "/chainguard/static/js/787.8f19a83d.chunk.js",
+    "static/media/image.png": "/chainguard/static/media/image.7d1a04b542a9a1e95348.png",
+    "index.html": "/chainguard/index.html",
+    "main.41e59344.css.map": "/chainguard/static/css/main.41e59344.css.map",
+    "main.108e0463.js.map": "/chainguard/static/js/main.108e0463.js.map",
+    "787.8f19a83d.chunk.js.map": "/chainguard/static/js/787.8f19a83d.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.41e59344.css",
+    "static/js/main.108e0463.js"
+  ]
+}
