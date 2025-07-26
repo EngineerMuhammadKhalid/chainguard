@@ -1,3 +1,92 @@
+/* Access Control Custom Styles */
+.access-control-card {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 48px;
+  margin: 0 auto 32px auto;
+  padding: 32px 0;
+}
+
+.access-box {
+  background: #2d3250;
+  border-radius: 18px;
+  padding: 32px 32px 24px 32px;
+  min-width: 320px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.access-box h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 18px;
+  color: #fff;
+}
+
+.access-box input {
+  width: 100%;
+  font-size: 1.1rem;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 2px solid #00c6ff;
+  margin-bottom: 18px;
+  background: #23263a;
+  color: #fff;
+}
+
+.access-box input:focus {
+  outline: none;
+  border-color: #ff9800;
+}
+
+.grant-btn {
+  background: #21d07a;
+  color: #fff;
+  border: none;
+  padding: 12px 0;
+  width: 100%;
+  border-radius: 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: background 0.2s;
+}
+.grant-btn:hover {
+  background: #16b86a;
+}
+
+.revoke-btn {
+  background: #ff5252;
+  color: #fff;
+  border: none;
+  padding: 12px 0;
+  width: 100%;
+  border-radius: 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: background 0.2s;
+}
+.revoke-btn:hover {
+  background: #d32f2f;
+}
+
+.access-header {
+  color: #ff9800; /* orange, or use #fff for white */
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 32px;
+  text-align: center;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .header-right {
   display: flex;
   align-items: center;
