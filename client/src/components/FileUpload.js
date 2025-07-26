@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import axios from "axios";
 import { Line } from "react-chartjs-2";
@@ -12,30 +13,44 @@ const FileUpload = ({ contract, account, provider }) => {
   const [uploadedFiles, setUploadedFiles] = useState([]); // Store fetched uploaded files
   const [loading, setLoading] = useState(false);
 
+  const retrieveFile = (e) => {
+    const data = e.target.files[0];
+    const reader = new window.FileReader();
+    reader.readAsArrayBuffer(data);
+    reader.onloadend = () => {
+      setFile(e.target.files[0]);
+    };
+    setFileName(e.target.files[0].name);
+    e.preventDefault();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (file) {
-      const uploadStart = performance.now();
-      const fileSizeMB = file.size / (1024 * 1024);
+    if (!file) return;
+    const uploadStart = performance.now();
+    const fileSizeMB = file.size / (1024 * 1024);
+    let ipfsHash = null;
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      // Security metrics (advanced)
+      const isAuthenticated = !!account;
+      const isHttps = "https://api.pinata.cloud/pinning/pinFileToIPFS".startsWith("https://");
+      const trustedEndpoint = "api.pinata.cloud";
+      const endpointUsed = new URL("https://api.pinata.cloud/pinning/pinFileToIPFS").hostname;
+      const keysExposed = !!(process.env.pinata_api_key || process.env.pinata_secret_api_key);
+      console.log("--- Security Metrics ---");
+      console.log(`User authenticated: ${isAuthenticated}`);
+      console.log(`API uses HTTPS: ${isHttps}`);
+      console.log(`Trusted endpoint: ${endpointUsed === trustedEndpoint}`);
+      if (keysExposed) {
+        console.warn("Warning: Sensitive API keys should not be exposed in client-side code!");
+      }
+
+      // 1. Upload to Pinata
+      let resFile;
       try {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        // Security metrics (advanced)
-        const isAuthenticated = !!account;
-        const isHttps = "https://api.pinata.cloud/pinning/pinFileToIPFS".startsWith("https://");
-        const trustedEndpoint = "api.pinata.cloud";
-        const endpointUsed = new URL("https://api.pinata.cloud/pinning/pinFileToIPFS").hostname;
-        const keysExposed = !!(process.env.pinata_api_key || process.env.pinata_secret_api_key);
-        console.log("--- Security Metrics ---");
-        console.log(`User authenticated: ${isAuthenticated}`);
-        console.log(`API uses HTTPS: ${isHttps}`);
-        console.log(`Trusted endpoint: ${endpointUsed === trustedEndpoint}`);
-        if (keysExposed) {
-          console.warn("Warning: Sensitive API keys should not be exposed in client-side code!");
-        }
-
-        const resFile = await axios({
+        resFile = await axios({
           method: "post",
           url: "https://api.pinata.cloud/pinning/pinFileToIPFS",
           data: formData,
@@ -45,59 +60,76 @@ const FileUpload = ({ contract, account, provider }) => {
             "Content-Type": "multipart/form-data",
           },
         });
-        const uploadEnd = performance.now();
-        const uploadTime = (uploadEnd - uploadStart) / 1000;
-        const throughput = fileSizeMB / uploadTime;
-        const ipfsHash = resFile.data.IpfsHash || "-";
-        // Save metrics
-        setMetrics((prev) => [
-          ...prev,
-          {
-            fileName: file.name,
-            fileSizeMB: fileSizeMB.toFixed(2),
-            uploadTime: uploadTime.toFixed(2),
-            throughput: throughput.toFixed(2),
-            ipfsHash,
-            isAuthenticated,
-            isHttps,
-            trustedEndpoint: endpointUsed === trustedEndpoint,
-          },
-        ]);
-        console.log("--- Speed Metrics ---");
-        console.log(`File size: ${fileSizeMB.toFixed(2)} MB`);
-        console.log(`Upload time: ${uploadTime.toFixed(2)} seconds`);
-        console.log(`Upload throughput: ${throughput.toFixed(2)} MB/s`);
-        if (resFile.data.IpfsHash) {
-          console.log(`Uploaded file IPFS hash: ${resFile.data.IpfsHash}`);
-        }
-        const ImgHash = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
-        // Ensure contract call uses signer for MetaMask confirmation
+        ipfsHash = resFile.data.IpfsHash || "-";
+      } catch (err) {
+        alert("Unable to upload image to Pinata");
+        setFileName("No image selected");
+        setFile(null);
+        return;
+      }
+
+      // 2. Save metrics
+      const uploadEnd = performance.now();
+      const uploadTime = (uploadEnd - uploadStart) / 1000;
+      const throughput = fileSizeMB / uploadTime;
+      setMetrics((prev) => [
+        ...prev,
+        {
+          fileName: file.name,
+          fileSizeMB: fileSizeMB.toFixed(2),
+          uploadTime: uploadTime.toFixed(2),
+          throughput: throughput.toFixed(2),
+          ipfsHash,
+          isAuthenticated,
+          isHttps,
+          trustedEndpoint: endpointUsed === trustedEndpoint,
+        },
+      ]);
+      console.log("--- Speed Metrics ---");
+      console.log(`File size: ${fileSizeMB.toFixed(2)} MB`);
+      console.log(`Upload time: ${uploadTime.toFixed(2)} seconds`);
+      console.log(`Upload throughput: ${throughput.toFixed(2)} MB/s`);
+      if (ipfsHash && ipfsHash !== "-") {
+        console.log(`Uploaded file IPFS hash: ${ipfsHash}`);
+      }
+
+      // 3. Trigger MetaMask transaction (contract call)
+      const ImgHash = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
+      try {
+        // Always use a MetaMask signer (ethers.js v6)
         let contractWithSigner = contract;
-        if (provider && contract && provider.getSigner) {
-          contractWithSigner = contract.connect(provider.getSigner());
+        if (window.ethereum && provider && contract) {
+          // Use BrowserProvider from ethers.js v6
+          // If provider is not already a BrowserProvider, create one
+          let browserProvider = provider;
+          if (!provider.getSigner) {
+            // Dynamically import BrowserProvider if needed
+            const { BrowserProvider } = await import("ethers");
+            browserProvider = new BrowserProvider(window.ethereum);
+          }
+          const signer = await browserProvider.getSigner();
+          contractWithSigner = contract.connect(signer);
         }
         await contractWithSigner.add(account, ImgHash); // This will trigger MetaMask
         alert("Successfully Image Uploaded");
-        setFileName("No image selected");
-        setFile(null);
-      } catch (e) {
-        alert("Unable to upload image to Pinata");
+      } catch (err) {
+        let errorMsg = "Image uploaded to Pinata, but transaction failed. Please confirm MetaMask and try again.";
+        if (err && err.message) {
+          errorMsg += `\nBlockchain error: ${err.message}`;
+        }
+        if (err && err.data && err.data.message) {
+          errorMsg += `\nContract error: ${err.data.message}`;
+        }
+        alert(errorMsg);
+        console.error("Blockchain transaction error:", err);
       }
+      setFileName("No image selected");
+      setFile(null);
+    } catch (e) {
+      alert("Unexpected error during upload");
+      setFileName("No image selected");
+      setFile(null);
     }
-    alert("Successfully Image Uploaded");
-    setFileName("No image selected");
-    setFile(null);
-  };
-  const retrieveFile = (e) => {
-    const data = e.target.files[0]; //files array of files object
-    // console.log(data);
-    const reader = new window.FileReader();
-    reader.readAsArrayBuffer(data);
-    reader.onloadend = () => {
-      setFile(e.target.files[0]);
-    };
-    setFileName(e.target.files[0].name);
-    e.preventDefault();
   };
   // Fetch uploaded files from contract
   const handleGetData = async () => {
@@ -105,26 +137,29 @@ const FileUpload = ({ contract, account, provider }) => {
     setLoading(true);
     try {
       // Assumes contract has a function: get(account) that returns an array of hashes
-      const files = await contract.get(account);
+      let contractWithSigner = contract;
+      if (window.ethereum && provider && contract) {
+        let browserProvider = provider;
+        if (!provider.getSigner) {
+          const { BrowserProvider } = await import("ethers");
+          browserProvider = new BrowserProvider(window.ethereum);
+        }
+        const signer = await browserProvider.getSigner();
+        contractWithSigner = contract.connect(signer);
+      }
+      const files = await contractWithSigner.get(account);
       setUploadedFiles(files);
     } catch (err) {
-      alert("Unable to fetch uploaded files");
+      let errorMsg = "Unable to fetch uploaded files.";
+      if (err && err.message) {
+        errorMsg += `\nBlockchain error: ${err.message}`;
+      }
+      alert(errorMsg);
+      console.error("Fetch uploaded files error:", err);
     }
     setLoading(false);
   };
   // Table and Chart Data
-  const tableRows = metrics.map((m, i) => (
-    <tr key={i}>
-      <td>{m.fileName}</td>
-      <td>{m.fileSizeMB}</td>
-      <td>{m.uploadTime}</td>
-      <td>{m.throughput}</td>
-      <td>{m.ipfsHash}</td>
-      <td>{m.isAuthenticated ? "Yes" : "No"}</td>
-      <td>{m.isHttps ? "Yes" : "No"}</td>
-      <td>{m.trustedEndpoint ? "Yes" : "No"}</td>
-    </tr>
-  ));
   const chartData = {
     labels: metrics.map((m, i) => `#${i + 1}`), // Use short labels
     datasets: [
@@ -161,57 +196,104 @@ const FileUpload = ({ contract, account, provider }) => {
   return (
     <div className="top">
       <form className="form" onSubmit={handleSubmit}>
-        <label htmlFor="file-upload" className="choose">
-          Choose Image
-        </label>
-        <input
-          disabled={!account}
-          type="file"
-          id="file-upload"
-          name="data"
-          onChange={retrieveFile}
-        />
-        <span className="textArea">Image: {fileName}</span>
-        <button type="submit" className="upload" disabled={!file}>
-          Upload File
-        </button>
+        <div className="upload-controls">
+          <label htmlFor="file-upload">
+            Choose File
+          </label>
+          <input
+            disabled={!account}
+            type="file"
+            id="file-upload"
+            name="data"
+            onChange={retrieveFile}
+          />
+          <span className="file-name">{fileName}</span>
+          <button type="submit" disabled={!file}>
+            Upload File
+          </button>
+        </div>
       </form>
       <button className="get-data" onClick={handleGetData} disabled={!account || loading} style={{marginTop: 16}}>
         {loading ? "Loading..." : "Get Data"}
       </button>
       {uploadedFiles.length > 0 && (
-        <div style={{marginTop: 16}}>
-          <h3>Uploaded Files</h3>
-          <ul>
+        <div style={{marginTop: 24, background:'#fff', borderRadius:'12px', padding:'24px', boxShadow:'0 2px 8px rgba(0,0,0,0.08)', border:'1px solid #e0e0e0', maxWidth:'600px'}}>
+          <h3 style={{color:'#222', marginBottom:'16px'}}>Your Uploaded Files</h3>
+          <div style={{display:'flex', flexDirection:'column', gap:'12px'}}>
             {uploadedFiles.map((hash, idx) => (
-              <li key={idx}>
-                <a href={`https://gateway.pinata.cloud/ipfs/${hash}`} target="_blank" rel="noopener noreferrer">{hash}</a>
-              </li>
+              <div key={idx} style={{display:'flex', alignItems:'center', justifyContent:'space-between', background:'#f5f5f5', borderRadius:'8px', padding:'10px 16px'}}>
+                <span style={{fontFamily:'monospace', fontSize:'15px', color:'#333', wordBreak:'break-all', maxWidth:'340px'}}>{hash}</span>
+                <a href={`https://gateway.pinata.cloud/ipfs/${hash}`} target="_blank" rel="noopener noreferrer" style={{marginLeft:'16px', color:'#1976d2', fontWeight:'bold', textDecoration:'none', fontSize:'15px'}}>View</a>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
       {metrics.length > 0 && (
         <div style={{ marginTop: 32 }}>
-          <h3>Upload Metrics Table</h3>
-          <table className="metrics-table">
-            <thead>
-              <tr>
-                <th>File Name</th>
-                <th>Size (MB)</th>
-                <th>Upload Time (s)</th>
-                <th>Throughput (MB/s)</th>
-                <th>IPFS Hash</th>
-                <th>Authenticated</th>
-                <th>HTTPS</th>
-                <th>Trusted Endpoint</th>
-              </tr>
-            </thead>
-            <tbody>{tableRows}</tbody>
-          </table>
-          <h3>Upload Metrics Graph</h3>
-          <div className="metrics-graph-container">
-            <Line data={chartData} options={chartOptions} />
+          <h3 style={{color:'#fff'}}>Upload Metrics Table</h3>
+          <div style={{overflowX:'auto', maxWidth:'100vw'}}>
+            <table className="metrics-table" style={{width:'100%', background:'#fff', color:'#222', borderRadius:'8px', boxShadow:'0 2px 8px rgba(0,0,0,0.08)'}}>
+              <thead>
+                <tr style={{background:'#eaf6fb'}}>
+                  <th style={{color:'#fff'}}>File Name</th>
+                  <th style={{color:'#fff'}}>Size (MB)</th>
+                  <th style={{color:'#fff'}}>Upload Time (s)</th>
+                  <th style={{color:'#fff'}}>Throughput (MB/s)</th>
+                  <th style={{color:'#fff'}}>IPFS Hash</th>
+                  <th style={{color:'#fff'}}>Authenticated</th>
+                  <th style={{color:'#fff'}}>HTTPS</th>
+                  <th style={{color:'#fff'}}>Trusted Endpoint</th>
+                </tr>
+              </thead>
+              <tbody>
+                {metrics.map((m, i) => {
+                  // Truncate IPFS hash for display, show full hash on hover
+                  const hash = m.ipfsHash;
+                  const truncatedHash = hash.length > 12 ? `${hash.slice(0, 6)}...${hash.slice(-6)}` : hash;
+                  return (
+                    <tr key={i} style={{background: i % 2 === 0 ? '#fff' : '#f5f5f5'}}>
+                      <td>{m.fileName}</td>
+                      <td>{m.fileSizeMB}</td>
+                      <td>{m.uploadTime}</td>
+                      <td>{m.throughput}</td>
+                      <td style={{whiteSpace:'nowrap', maxWidth:'180px', overflow:'hidden', textOverflow:'ellipsis'}}>
+                        <span title={hash}>{truncatedHash}</span>
+                      </td>
+                      <td>{m.isAuthenticated ? "Yes" : "No"}</td>
+                      <td>{m.isHttps ? "Yes" : "No"}</td>
+                      <td>{m.trustedEndpoint ? "Yes" : "No"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <h3 style={{marginTop:'32px', color:'#fff'}}>Upload Metrics Graph</h3>
+          <div className="metrics-graph-container" style={{background:'#fff', borderRadius:'12px', padding:'24px', boxShadow:'0 2px 8px rgba(0,0,0,0.08)', border:'1px solid #e0e0e0'}}>
+            <Line data={{
+              ...chartData,
+              datasets: chartData.datasets.map(ds => ({
+                ...ds,
+                pointBackgroundColor: '#36a2eb',
+                pointBorderColor: '#222',
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                borderWidth: 3
+              }))
+            }} options={{
+              ...chartOptions,
+              plugins: {
+                ...chartOptions.plugins,
+                legend: { ...chartOptions.plugins.legend, labels: { color: '#222', font: { size: 16 } } },
+                title: { ...chartOptions.plugins.title, color: '#222', font: { size: 18 } }
+              },
+              scales: {
+                x: { ...chartOptions.scales.x, ticks: { color: '#222', font: { size: 14 } }, grid: { color: '#e0e0e0' } },
+                y: { ...chartOptions.scales.y, ticks: { color: '#222', font: { size: 14 } }, grid: { color: '#e0e0e0' } },
+                y1: { ...chartOptions.scales.y1, ticks: { color: '#222', font: { size: 14 } }, grid: { color: '#e0e0e0' } },
+              },
+            }} />
           </div>
         </div>
       )}

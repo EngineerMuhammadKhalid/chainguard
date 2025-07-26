@@ -1,0 +1,37 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+.grid {
+  display: grid;
+  gap: 32px;
+}
+.dashboard-stats {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  justify-items: center;
+  align-items: stretch;
+  width: 100%;
+  margin-bottom: 24px;
+}
+@media (max-width: 900px) {
+  .container {
+    padding: 8px;
+  }
+  .sidebar {
+    width: 100vw;
+    min-width: unset;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 18px 0 18px 18px;
+    min-height: unset;
+    box-shadow: none;
+    border-bottom: 1.5px solid #222;
+    z-index: 2;
+  }
+  .dashboard-stats {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+}

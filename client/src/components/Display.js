@@ -33,14 +33,19 @@ const Display = ({ contract, account }) => {
     const str = dataArray.toString();
     const str_array = str.split(",");
     const images = str_array.map((item, i) => {
+      // Use the stored value directly as the image src
       return (
         <a href={item} key={i} target="_blank" rel="noopener noreferrer">
           <img
             key={i}
-            src={`https://gateway.pinata.cloud/ipfs/${item.substring(6)}`}
-            alt="new"
+            src={item}
+            alt="Stored file"
             className="image-list"
-          ></img>
+            onError={e => {
+              e.target.onerror = null;
+              e.target.src = "https://via.placeholder.com/150?text=No+Preview";
+            }}
+          />
         </a>
       );
     });
